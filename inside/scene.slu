@@ -1,0 +1,25 @@
+var doorOpen = TRUE;
+
+sub inside () {
+	setScale (0, 120);
+	setFloor ('inside/floor.flo');
+	addOverlay ('inside/room.tga', 0, 0);
+	addOverlay ('inside/dooropen.tga', 315, 63);
+	addScreenRegion (inDoor, 314, 61, 396, 167, 355, 156, NORTH);
+	addCharacter (ego, 355, 156, makeEgoAnim ());
+	moveCharacter (ego, inDoor);
+	turnCharacter (ego, SOUTH);
+}
+
+objectType inDoor ("door") {
+	event use {
+		doorOpen = ! doorOpen;
+		addOverlay (doorOpen ? 'inside/dooropen.tga' : 'inside/doorshut.tga', 315, 63);
+	}
+	event walkTo {
+		if (doorOpen) {
+			forceCharacter (ego, inDoor);
+			gotoRoom (outside);
+		}
+	}
+}

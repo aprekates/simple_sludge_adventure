@@ -1,0 +1,30 @@
+[SETTINGS]
+windowname=Small SLUDGE example game
+finalfile=Small example
+language=English
+datafolder=
+quitmessage=Are you sure? Aww... shame...
+customicon=
+customlogo=
+mouse=2
+fullscreen=N
+makesilent=N
+showlogo=Y
+showloading=Y
+invisible=N
+ditherimages=N
+width=600
+height=380
+speed=20
+chrRender_def_enabled=Y
+chrRender_def_softX=4
+chrRender_def_softY=4
+chrRender_max_enabled=Y
+chrRender_max_readIni=Y
+chrRender_max_softX=100
+chrRender_max_softY=100
+
+[FILES]
+init.slu
+outside\scene.slu
+inside\scene.slu

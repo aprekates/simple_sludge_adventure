@@ -1,0 +1,247 @@
+var busy = TRUE;
+var lastRoom = NULL;
+var currentRoom = NULL;
+var pointingAt = NULL;
+var action;
+var object;
+var verbText;
+
+# The init function is called when the program starts
+sub init () {
+
+	# Load a font... the second parameter is a list of all the letters and
+	# characters which the font can represent
+	setFont ('interface/demofont.duc', "ΙABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789\"'/?!.,;:()*%& -~`@", 32);
+
+	# Add a status bar
+	addStatus ();
+	alignStatus (CENTRE);
+	positionStatus (15, 321);
+
+	# Load the main image at (0, 330)
+	blankScreen ();
+	addOverlay ('interface/bar.tga', 0, 330);
+	pickUp.deselect ();
+	lookAt.deselect ();
+#	walkTo.deselect ();
+	talkTo.deselect ();
+	use.deselect ();
+
+	pickNormalAction (walkTo);
+
+	onFocusChange (focusChange);
+	onKeyboard (handleKeys);
+
+	stop ();
+	gotoRoom (outside);
+
+	# Let the user take control
+	go ();
+}
+
+sub gotoRoom (r) {
+	focusChange (NULL);
+	lastRoom = currentRoom;
+	currentRoom = r;
+	removeAllScreenRegions ();
+	removeAllCharacters ();
+	r ();
+	addScreenRegion (walkTo,	41,  339, 161, 368, 0, 0, 0);
+	addScreenRegion (lookAt,	179, 339, 283, 368, 0, 0, 0);
+	addScreenRegion (use,		298, 339, 338, 368, 0, 0, 0);
+	addScreenRegion (pickUp,	357, 339, 440, 368, 0, 0, 0);
+	addScreenRegion (talkTo,	453, 339, 558, 368, 0, 0, 0);
+}
+
+sub makeEgoAnim () {
+	var standFrames =	anim ('alien.duc', 4);
+	var walkFrames =	anim ('alien.duc', wait (0, 2), wait (1, 2), wait (2, 2), wait (3, 2));
+	var talkFrames =	anim ('alien.duc', 6, 6, 4, 4, 5, 6, 5, 4, 6, 4, 5);
+	var backStandFrames =	anim ('alien.duc', 11);
+	var backWalkFrames =	anim ('alien.duc', wait (7, 2), wait (8, 2), wait (9, 2), wait (10, 2));
+
+	return costume (
+		standFrames, standFrames, backStandFrames, standFrames,
+		walkFrames, walkFrames, backWalkFrames, walkFrames,
+		talkFrames, talkFrames, backStandFrames, talkFrames);
+}
+
+sub handleKeys (whichKey) {
+	if (whichKey == " ") showBoxes ();
+	if (whichKey == "ESCAPE") quitGame ();
+}
+
+sub go () {
+	onLeftMouse (actionClick); 
+	onRightMouse ();
+
+	setCursor (anim ('interface/mouse.duc', 0));
+
+	busy = FALSE;
+	showCommand ();
+}
+
+# Function which stops a player's control of the game
+sub stop () {
+
+	# No event handlers for left and right mouse buttons
+	onLeftMouse (speechSkipper);
+	onRightMouse (speechSkipper);
+
+	# Make the mouse into a busy cursor
+	setCursor (anim ('interface/mouse.duc', 1));
+	# Alternatively, make it invisible
+	# setCursor (NULL);
+
+	# Turn off interactions and clear the text at the bottom of the window
+	busy = TRUE;
+	statusText ("");
+}
+
+# Skips to the end of the line of text which is currently being said
+sub speechSkipper () {
+	skipSpeech ();
+}
+
+# Displays the verb line at the bottom of the window
+sub showCommand () {
+
+	# If we're not busy, show the action text followed by the name of the
+	# object we're pointing at
+	if (! busy) {
+		if (pointingAt) {
+			if (pointingAt + "" != "") {
+				statusText (verbText + " " + pointingAt);
+				return;
+			}
+		}
+		statusText (verbText);
+	}
+}
+
+# Called whenever the mouse points at a different object
+sub focusChange (whichObject) {
+
+	# Let's update the variable which stores the information
+	pointingAt = whichObject;
+
+	# Better refresh the text at the bottom of the window, too
+	showCommand ();
+}
+
+sub pickNormalAction (ac) {
+	callEvent (select, ac);
+	action = ac;
+}
+
+sub doEvent (a, b) {
+
+	# Let's try and combine object a with object b
+	if (! callEvent (a, b)) {
+
+		# No luck? OK, how about the other way around?
+		if (! callEvent (b, a)) {
+
+			# Better use the default response for the action, then
+			callEvent (default, a);
+		}
+	}
+}
+
+# We've clicked the ACTION mouse button!
+sub actionClick () {
+	stopCharacter (ego);
+	if (pointingAt) {
+		if (callEvent (select, pointingAt)) {
+			callEvent (deselect, action);
+			playSound ('interface/click.wav');
+			action = pointingAt;
+		} else {
+			object = pointingAt;
+			moveCharacter (ego, object);
+			stop ();
+			callEvent (deselect, action);
+			doEvent (action, object);
+			pickNormalAction (walkTo);
+			go ();
+		}
+	} else if (getMouseY () < 297) {
+		moveCharacter (ego, getMouseX (), getMouseY ());
+	}
+}
+
+objectType ego ("") {
+	speechColour 128, 255, 128;
+}
+
+objectType select ("") {
+}
+
+objectType deselect ("") {
+}
+
+objectType default ("") {
+}
+
+objectType use ("") {
+	event select {
+		verbText = "Use";
+		addOverlay ('interface/useOn.tga', 302, 345);
+	}
+	event deselect {
+		addOverlay ('interface/useOff.tga', 302, 345);
+	}
+	event default {
+		say (ego, "I've no idea how I could use that...");
+	}
+}
+
+objectType talkTo ("") {
+	event select {
+		verbText = "Talk to";
+		addOverlay ('interface/talkToOn.tga', 453, 340);
+	}
+	event deselect {
+		addOverlay ('interface/talkToOff.tga', 453, 340);
+	}
+	event default {
+		say (ego, "Oi! Yeah, you, " +  object + "! Talk to me!");
+		say (ego, "Hmm. Nothing.");
+	}
+}
+
+objectType walkTo ("") {
+	event select {
+		verbText = "Walk to";
+		addOverlay ('interface/walkToOn.tga', 44, 343);
+	}
+	event deselect {
+		addOverlay ('interface/walkToOff.tga', 44, 343);
+	}
+}
+
+objectType lookAt ("") {
+	event select {
+		verbText = "Look at";
+		addOverlay ('interface/lookAtOn.tga', 181, 343);
+	}
+	event deselect {
+		addOverlay ('interface/lookAtOff.tga', 181, 343);
+	}
+	event default {
+		say (ego, "Cool " + object + ".");
+	}
+}
+
+objectType pickUp ("") {
+	event select {
+		verbText = "Pick up";
+		addOverlay ('interface/pickUpOn.tga', 359, 342);
+	}
+	event deselect {
+		addOverlay ('interface/pickUpOff.tga', 359, 342);
+	}
+	event default {
+		say (ego, "My pockets wouldn't be able to hold that...");
+	}
+}

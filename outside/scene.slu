@@ -1,0 +1,45 @@
+sub outside () {
+	setScale (100, 85);
+	setFloor ('outside/scene.flo');
+	addOverlay ('outside/scene.tga', 0, 0);
+	addScreenRegion (house, 338, 0, 563, 177, 394, 200, NORTH);
+	addScreenRegion (clouds, 0, 0, 337, 130, 320, 160, NORTH);
+	addScreenRegion (outDoor, 355, 110, 404, 174, 366, 176, NORTH);
+	if (lastRoom == inside) {
+		addCharacter (ego, 366, 176, makeEgoAnim ());
+		moveCharacter (ego, 346, 186);
+	} else {
+		addCharacter (ego, 180, 270, makeEgoAnim ());
+		say (ego, "Hi! Welcome to the SLUDGE example game.");
+		say (ego, "This is only one of the interface designs possible with SLUDGE...");
+		say (ego, "Press the left mouse button to pick actions and objects.");
+		say (ego, "Click the right mouse button to skip through the things I say.");
+		say (ego, "Right, then... let's get going!");
+	}
+}
+
+objectType house ("house") {
+	event lookAt {
+		say (ego, "Good grief... who designed those windows?");
+	}
+}
+
+objectType clouds ("clouds") {
+	event lookAt {
+		say (ego, pickOne ("It must be a very still day. They're not moving very fast.", "Wow! There's one in the shape of... um... well, a cloud."));
+	}
+}
+
+objectType outDoor ("doorway") {
+	event walkTo {
+		gotoRoom (inside);
+	}
+	event use {
+		say (ego, "I can't close the door from the outside.");
+		say (ego, "In fact, I can't even SEE the door from the outside.");
+		say (ego, "But hey, this is only an example. What can you expect?");
+	}
+	event lookAt {
+		say (ego, "It leads into the house.");
+	}
+}
